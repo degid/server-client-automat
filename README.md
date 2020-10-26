@@ -1,3 +1,5 @@
 # server-client-automat
 
-![Screenshot](screenshots/screenshot01.png)
+![Screenshot](images/Diagram.svg)
+
+![Screenshot](images/screenshot01.png)
