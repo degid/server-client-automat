@@ -1,14 +1,15 @@
 import asyncio
-import signal
-import sys
-import random
-from threading import Thread
-import time
-from utils import Http
-import urllib.request
+import curses
 import json
 import os
-import curses
+import random
+import signal
+import sys
+from threading import Thread
+import time
+import urllib.request
+
+from utils import Http
 
 
 screen_bofer = {

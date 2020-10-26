@@ -1,8 +1,8 @@
 import json
+import re
 from string import Template
 import sys
 from time import gmtime, strftime
-import re
 
 tmpl = (
     'HTTP/1.1 $code $message\r\n'
