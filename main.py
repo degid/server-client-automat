@@ -1,98 +1,15 @@
 import curses
-import json
 import os
-import random
 from multiprocessing import Queue
 import signal
 import sys
 from threading import Thread
 import time
-import urllib.request
 
+from clients_urllib import AutomatThread
 from server_async import Server
 
 HOST, PORT = '127.0.0.1', 8001
-
-count_F_status = 0
-
-
-class AutomatThread(Thread):
-    def __init__(self, id):
-        Thread.__init__(self)
-        self.id = id
-        self.active_state = 'A'
-
-    def set_state(self, state):
-        self.active_state = state
-        time.sleep(random.uniform(1, 3))
-
-    def update_status(self, value):
-        if self.active_state == 'A':
-            if value >= 10:
-                self.set_state('B')
-            elif value < 5:
-                self.set_state('C')
-            else:
-                self.set_state('A')
-
-        elif self.active_state == 'B':
-            if value >= 50:
-                self.set_state('C')
-            elif value < 5:
-                self.set_state('D')
-            else:
-                self.set_state('B')
-
-        elif self.active_state == 'C':
-            if value >= 90:
-                self.set_state('D')
-            elif value < 5:
-                self.set_state('E')
-            else:
-                self.set_state('C')
-
-        elif self.active_state == 'D':
-            if value >= 130:
-                self.set_state('D')
-            elif value < 5:
-                self.set_state('F')
-            else:
-                self.set_state('E')
-
-        elif self.active_state == 'E':
-            if value >= 170:
-                self.set_state('F')
-            elif value < 5:
-                self.set_state('A')
-            else:
-                self.set_state('E')
-
-        elif self.active_state == 'F':
-            return True
-
-        return False
-
-    def run(self):
-        while True:
-            random_x = random.randint(1, 255)
-
-            data = {
-                'status': self.active_state,
-                'x': random_x,
-                'id': self.id
-            }
-            rsp = json.dumps(data).encode('utf-8')
-
-            with urllib.request.urlopen(f"http://{HOST}:{PORT}", rsp) as f:
-                try:
-                    response = json.load(f)
-                except Exception as e:
-                    print(e)
-                    break
-
-            answer_y = int(response['message']['y'])
-            if self.update_status(answer_y):
-                break
 
 
 class MainWindow:
@@ -116,7 +33,6 @@ class MainWindow:
         exit_symbol = [81, 113, 176, 208]
         while char not in exit_symbol:
             char = self.screen.getch()
-            # FIXME update if screen_buffer changed or resize window
             self.paint()
             time.sleep(.1)
 
@@ -127,8 +43,9 @@ class MainWindow:
         time.sleep(1)
 
     def paint(self):
-        if not self.queue.empty():
-            self.screen_buffer = self.queue.get()
+        if self.queue.empty():
+            return
+        self.screen_buffer = self.queue.get()
 
         self.screen.clear()
         self.screen.keypad(1)
@@ -170,9 +87,6 @@ class MainWindow:
 
         # server statistics
         self.screen.vline(1, 42, curses.ACS_VLINE, 12)
-        # self.screen.vline(0, 59, curses.ACS_TTEE, 1)
-        # self.screen.vline(1, 59, curses.ACS_VLINE, 4)
-        # self.screen.hline(5, 59, curses.ACS_LRCORNER, 1)
         self.screen.addstr(1, 48, "SERVER")
         self.screen.addstr(2, 45, f"request: {self.screen_buffer['request_count']}")
         if self.screen_buffer['min'] == 255:
@@ -209,7 +123,7 @@ class MainWindow:
 
 def start_clients():
     for th in range(0, 32):
-        thread = AutomatThread(th)
+        thread = AutomatThread(th, HOST, PORT)
         thread.start()
 
 
