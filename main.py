@@ -25,12 +25,13 @@ class MainWindow:
         curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_CYAN)
+        curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.curs_set(False)
         self.screen.nodelay(True)
 
     def start(self):
         char = 0
-        exit_symbol = [81, 113, 176, 208]
+        exit_symbol = [81, 113, 176, 208, 70, 102, 192, 340]
         while char not in exit_symbol:
             char = self.screen.getch()
             self.paint()
@@ -38,9 +39,22 @@ class MainWindow:
 
             # All threads completed, close
             if self.screen_buffer['F_status_count'] == 32:
-                break
+                self.f_window()
+
         signal.alarm(1)
         time.sleep(1)
+
+    def f_window(self):
+        begin_x, begin_y = 6, 4
+        height, width = 5, 30
+        win = curses.newwin(height, width, begin_y, begin_x)
+        win.bkgd(' ', curses.color_pair(4) | curses.A_BOLD)
+        F_msg = "UHJlc3MgRiB0byBQYXkgUmVzcGVjdHM="
+        import base64
+        win.addstr(2, int(width / 2) - 12, base64.b64decode(F_msg), curses.color_pair(4))
+        win.border(0)
+        win.refresh()
+        self.screen.refresh()
 
     def paint(self):
         if self.queue.empty():
@@ -48,7 +62,7 @@ class MainWindow:
         self.screen_buffer = self.queue.get()
 
         self.screen.clear()
-        self.screen.keypad(1)
+        self.screen.keypad(True)
         self.screen.border()
         curses.update_lines_cols()
 
