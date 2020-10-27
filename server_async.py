@@ -5,14 +5,6 @@ import sys
 
 from utils import Http
 
-screen_bofer = {
-    'request_count': 0,
-    'F_status_count': 0,
-    'clients': {},
-    'max': 0,
-    'min': 255
-}
-
 
 class Server:
     def __init__(self, server_address, server_port, queue):
@@ -20,6 +12,7 @@ class Server:
         self.server_port = server_port
         self.queue = queue
         self.request_count = 0
+        self.screen_buffer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
 
     def run(self):
         asyncio.run(self.start())
@@ -30,9 +23,8 @@ class Server:
         await server.serve_forever()
 
     async def server_client(self, reader, writer):
-        cid = self.request_count
-        self.request_count += 1
-        screen_bofer['request_count'] = self.request_count
+        cid = self.screen_buffer['request_count']
+        self.screen_buffer['request_count'] += 1
 
         request = await self.read_request(reader)
         response = await self.handle_request(request)
@@ -99,19 +91,19 @@ class Server:
             return Http.E400('Bad Request (status or x)')
 
         count = 1
-        if data['id'] in screen_bofer['clients']:
-            count = screen_bofer['clients'][data['id']]['count'] + 1
-        screen_bofer['clients'][data['id']] = {'status': data['status'], 'count': count}
+        if data['id'] in self.screen_buffer['clients']:
+            count = self.screen_buffer['clients'][data['id']]['count'] + 1
+        self.screen_buffer['clients'][data['id']] = {'status': data['status'], 'count': count}
 
         x = int(data['x'])
         y = x % random.randint(1, 255)
-        screen_bofer['max'] = max(screen_bofer['max'], count)
+        self.screen_buffer['max'] = max(self.screen_buffer['max'], count)
 
-        if screen_bofer['clients'][data['id']]['status'] == 'F':
-            screen_bofer['min'] = min(screen_bofer['min'], count)
-            screen_bofer['F_status_count'] += 1
+        if self.screen_buffer['clients'][data['id']]['status'] == 'F':
+            self.screen_buffer['min'] = min(self.screen_buffer['min'], count)
+            self.screen_buffer['F_status_count'] += 1
 
-        self.queue.put(screen_bofer)
+        self.queue.put(self.screen_buffer)
 
         return Http.R200({'x': x, 'y': y})
 

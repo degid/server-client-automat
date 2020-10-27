@@ -98,7 +98,7 @@ class AutomatThread(Thread):
 class MainWindow:
     def __init__(self, queue):
         self.queue = queue
-        self.screen_bofer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
+        self.screen_buffer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
         self.setwondow()
         self.start()
 
@@ -116,19 +116,19 @@ class MainWindow:
         exit_symbol = [81, 113, 176, 208]
         while char not in exit_symbol:
             char = self.screen.getch()
-            # FIXME update if screen_bofer changed or resize window
+            # FIXME update if screen_buffer changed or resize window
             self.paint()
             time.sleep(.1)
 
             # All threads completed, close
-            if self.screen_bofer['F_status_count'] == 32:
+            if self.screen_buffer['F_status_count'] == 32:
                 break
         signal.alarm(1)
         time.sleep(1)
 
     def paint(self):
         if not self.queue.empty():
-            self.screen_bofer = self.queue.get()
+            self.screen_buffer = self.queue.get()
 
         self.screen.clear()
         self.screen.keypad(1)
@@ -138,23 +138,23 @@ class MainWindow:
         # satatus processes
         next_pos = 0
         next_row = 0
-        for i, clnt in enumerate(self.screen_bofer['clients']):
-            X = 0 if self.screen_bofer['clients'][clnt]['count'] > 99 else 1
-            if self.screen_bofer['clients'][clnt]['status'] == 'F':
+        for i, clnt in enumerate(self.screen_buffer['clients']):
+            X = 0 if self.screen_buffer['clients'][clnt]['count'] > 99 else 1
+            if self.screen_buffer['clients'][clnt]['status'] == 'F':
                 self.screen.addstr(1 + next_row, 1 + next_pos, " X_X ", curses.color_pair(1))
                 self.screen.addstr(2 + next_row, 1 + next_pos,
-                                   f"  {self.screen_bofer['clients'][clnt]['status']}  ",
+                                   f"  {self.screen_buffer['clients'][clnt]['status']}  ",
                                    curses.color_pair(1))
                 self.screen.addstr(3 + next_row, X + next_pos,
-                                   f"  {self.screen_bofer['clients'][clnt]['count']}  ",
+                                   f"  {self.screen_buffer['clients'][clnt]['count']}  ",
                                    curses.color_pair(1))
             else:
                 self.screen.addstr(1 + next_row, 1 + next_pos, " O_O ", curses.color_pair(2))
                 self.screen.addstr(2 + next_row, 1 + next_pos,
-                                   f"  {self.screen_bofer['clients'][clnt]['status']}  ",
+                                   f"  {self.screen_buffer['clients'][clnt]['status']}  ",
                                    curses.color_pair(2))
                 self.screen.addstr(3 + next_row, X + next_pos,
-                                   f"  {self.screen_bofer['clients'][clnt]['count']}  ",
+                                   f"  {self.screen_buffer['clients'][clnt]['count']}  ",
                                    curses.color_pair(2))
 
             if (i+1) % 8 == 0:
@@ -174,21 +174,21 @@ class MainWindow:
         # self.screen.vline(1, 59, curses.ACS_VLINE, 4)
         # self.screen.hline(5, 59, curses.ACS_LRCORNER, 1)
         self.screen.addstr(1, 48, "SERVER")
-        self.screen.addstr(2, 45, f"request: {self.screen_bofer['request_count']}")
-        if self.screen_bofer['min'] == 255:
+        self.screen.addstr(2, 45, f"request: {self.screen_buffer['request_count']}")
+        if self.screen_buffer['min'] == 255:
             self.screen.addstr(3, 45, "min: -")
         else:
-            self.screen.addstr(3, 45, f"min: {self.screen_bofer['min']}")
+            self.screen.addstr(3, 45, f"min: {self.screen_buffer['min']}")
 
-        if self.screen_bofer['max'] == 0:
+        if self.screen_buffer['max'] == 0:
             self.screen.addstr(4, 45, "max: -")
         else:
-            self.screen.addstr(4, 45, f"max: {self.screen_bofer['max']}")
+            self.screen.addstr(4, 45, f"max: {self.screen_buffer['max']}")
 
         self.screen.hline(5, 42, curses.ACS_LTEE, 1)
         self.screen.hline(5, 43, curses.ACS_HLINE, 16)
 
-        self.screen.addstr(6, 45, f"Exit: { 32 - self.screen_bofer['F_status_count']}")
+        self.screen.addstr(6, 45, f"Exit: { 32 - self.screen_buffer['F_status_count']}")
 
         # diagram
         self.screen.vline(2, 62, curses.ACS_VLINE, 11)
@@ -196,8 +196,8 @@ class MainWindow:
         self.screen.hline(13, 62, curses.ACS_PLUS, 1)
 
         height = 12
-        for i, clnt in enumerate(self.screen_bofer['clients']):
-            value = round(self.screen_bofer['clients'][clnt]['count'] / height)
+        for i, clnt in enumerate(self.screen_buffer['clients']):
+            value = round(self.screen_buffer['clients'][clnt]['count'] / height)
             self.screen.vline(1 + height - value, 63+i, curses.ACS_BOARD, value)
 
         # Show [Quit]
