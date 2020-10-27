@@ -41,12 +41,18 @@ json_response = {
 
 class Http:
     http_re = re.compile(r"^(\w+)\s(.*)\sHTTP\/1.1")
+    Status_400 = 'E400'
+    POST = 'POST'
+    GET = 'GET'
 
     def HTTP_Response(tmp, data, json_message):
         HTTP = Template(tmp)
         jsdmp = json.dumps(json_message)
         data['length'] = len(jsdmp)
         return HTTP.substitute(data) + jsdmp
+
+    def date_time_string(self):
+        return strftime("%a, %d %b %Y %H:%M:%S GMT", gmtime())
 
     @classmethod
     def E400(self, message=None):
