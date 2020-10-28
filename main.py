@@ -25,6 +25,7 @@ class MainWindow:
         curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_CYAN)
         curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)
+        curses.init_pair(5, curses.COLOR_WHITE, curses.COLOR_GREEN)
         curses.curs_set(False)
         self.screen.nodelay(True)
         self.createwin()
@@ -70,8 +71,8 @@ class MainWindow:
 
             time.sleep(.1)
 
-        signal.alarm(1)
-        time.sleep(1)
+        # Exit
+        handler()
 
     def f_window(self, ):
         self.win.addstr(2, 4, self.f_mesage, curses.color_pair(4))
@@ -107,6 +108,9 @@ class MainWindow:
         self.clients.border()
         self.clients.noutrefresh()
 
+    def draw_line(self):
+        pass
+
     def paint(self):
         self.screen.keypad(True)
 
@@ -130,14 +134,18 @@ class MainWindow:
         self.screen.addstr(6, 45, f"Exit: { 32 - self.screen_buffer['F_status_count']} ")
 
         # diagram
-        self.screen.vline(2, 62, curses.ACS_VLINE, 11)
-        self.screen.hline(13, 63, curses.ACS_HLINE, 33)
+        self.screen.vline(2, 62, curses.ACS_VLINE, 12)
+        self.screen.hline(13, 63, curses.ACS_HLINE, 32)
         self.screen.hline(13, 62, curses.ACS_PLUS, 1)
 
         height = 12
         for i, clnt in enumerate(self.screen_buffer['clients']):
             value = round(self.screen_buffer['clients'][clnt]['count'] / height)
-            self.screen.vline(1 + height - value, 63+i, curses.ACS_BOARD, value)
+            # FIXME use draw_line()
+            if sys.platform != 'linux':
+                self.screen.addstr(height - value, 63+i, " ", curses.color_pair(5))
+            else:
+                self.screen.vline(1 + height - value, 63+i, curses.ACS_BOARD, value)
 
         self.screen.border()
         # Show [Quit]
@@ -159,7 +167,7 @@ def start_server(queue):
     srv.run()
 
 
-def handler(signum, frame):
+def handler(signum=None, frame=None):
     print('Signal handler called with signal', signum)
     curses.endwin()
     sys.exit()
@@ -167,7 +175,6 @@ def handler(signum, frame):
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler)
-    signal.signal(signal.SIGALRM, handler)
 
     queue = Queue()
     thread = Thread(target=start_server, args=(queue, ), daemon=True)
