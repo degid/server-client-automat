@@ -1,4 +1,5 @@
 import curses
+import os
 from multiprocessing import Queue
 import signal
 import sys
@@ -27,88 +28,76 @@ class MainWindow:
         curses.init_pair(4, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.curs_set(False)
         self.screen.nodelay(True)
-        self.createwin()
-
-        from base64 import b64decode
-        self.f_mesage = b64decode("UHJlc3MgRiB0byBQYXkgUmVzcGVjdHM=")
-
-    def createwin(self):
-        self.win = curses.newwin(5, 30, 5, 7)
-        self.win.bkgd(' ', curses.color_pair(4) | curses.A_BOLD)
-        self.clients = curses.newwin(14, 42, 1, 1)
-        self.clients.bkgd(' ', curses.color_pair(0) | curses.A_BOLD)
 
     def start(self):
-        curses.update_lines_cols()
-        line, cols = curses.LINES, curses.COLS
         char = 0
         exit_symbol = [81, 113, 176, 208, 70, 102, 192, 340]
         while char not in exit_symbol:
             char = self.screen.getch()
-
-            if not self.queue.empty():
-                self.screen_buffer = self.queue.get()
-
-            try:
-                self.paint()
-                self.clients_window()
-                # All threads completed, close
-                if self.screen_buffer['F_status_count'] == 32:
-                    self.f_window()
-            except curses.error:
-                pass
-
-            curses.update_lines_cols()
-            if curses.COLS != cols or curses.LINES != line:
-                line, cols = curses.LINES, curses.COLS
-                self.createwin()
-                self.screen.clear()
-                self.clients.clear()
-                self.win.clear()
-            else:
-                curses.doupdate()
-
+            self.paint()
             time.sleep(.1)
+
+            # All threads completed, close
+            if self.screen_buffer['F_status_count'] == 32:
+                self.f_window()
 
         signal.alarm(1)
         time.sleep(1)
 
-    def f_window(self, ):
-        self.win.addstr(2, 4, self.f_mesage, curses.color_pair(4))
-        self.win.border()
-        self.win.noutrefresh()
+    def f_window(self):
+        begin_x, begin_y = 6, 4
+        height, width = 5, 30
+        win = curses.newwin(height, width, begin_y, begin_x)
+        win.bkgd(' ', curses.color_pair(4) | curses.A_BOLD)
+        F_msg = "UHJlc3MgRiB0byBQYXkgUmVzcGVjdHM="
+        import base64
+        win.addstr(2, int(width / 2) - 12, base64.b64decode(F_msg), curses.color_pair(4))
+        win.border(0)
+        win.refresh()
+        self.screen.refresh()
 
-    def clients_window(self):
-        next_pos, next_row = 0, 0
+    def paint(self):
+        if self.queue.empty():
+            return
+        self.screen_buffer = self.queue.get()
+
+        self.screen.clear()
+        self.screen.keypad(True)
+        self.screen.border()
+        curses.update_lines_cols()
+
+        # satatus processes
+        next_pos = 0
+        next_row = 0
         for i, clnt in enumerate(self.screen_buffer['clients']):
             X = 0 if self.screen_buffer['clients'][clnt]['count'] > 99 else 1
             if self.screen_buffer['clients'][clnt]['status'] == 'F':
-                self.clients.addstr(1 + next_row, 1 + next_pos, " X_X ", curses.color_pair(1))
-                self.clients.addstr(2 + next_row, 1 + next_pos,
-                                    f"  {self.screen_buffer['clients'][clnt]['status']}  ",
-                                    curses.color_pair(1))
-                self.clients.addstr(3 + next_row, X + next_pos,
-                                    f"  {self.screen_buffer['clients'][clnt]['count']}  ",
-                                    curses.color_pair(1))
+                self.screen.addstr(1 + next_row, 1 + next_pos, " X_X ", curses.color_pair(1))
+                self.screen.addstr(2 + next_row, 1 + next_pos,
+                                   f"  {self.screen_buffer['clients'][clnt]['status']}  ",
+                                   curses.color_pair(1))
+                self.screen.addstr(3 + next_row, X + next_pos,
+                                   f"  {self.screen_buffer['clients'][clnt]['count']}  ",
+                                   curses.color_pair(1))
             else:
-                self.clients.addstr(1 + next_row, 1 + next_pos, " O_O ", curses.color_pair(2))
-                self.clients.addstr(2 + next_row, 1 + next_pos,
-                                    f"  {self.screen_buffer['clients'][clnt]['status']}  ",
-                                    curses.color_pair(2))
-                self.clients.addstr(3 + next_row, X + next_pos,
-                                    f"  {self.screen_buffer['clients'][clnt]['count']}  ",
-                                    curses.color_pair(2))
+                self.screen.addstr(1 + next_row, 1 + next_pos, " O_O ", curses.color_pair(2))
+                self.screen.addstr(2 + next_row, 1 + next_pos,
+                                   f"  {self.screen_buffer['clients'][clnt]['status']}  ",
+                                   curses.color_pair(2))
+                self.screen.addstr(3 + next_row, X + next_pos,
+                                   f"  {self.screen_buffer['clients'][clnt]['count']}  ",
+                                   curses.color_pair(2))
 
             if (i+1) % 8 == 0:
                 next_pos = 0
                 next_row += 3
             else:
                 next_pos += 5
-        self.clients.border()
-        self.clients.noutrefresh()
 
-    def paint(self):
-        self.screen.keypad(True)
+        self.screen.hline(13, 1, curses.ACS_HLINE, 41)
+        self.screen.hline(13, 0, curses.ACS_LTEE, 1)
+        self.screen.hline(13, 42, curses.ACS_LRCORNER, 1)
+        self.screen.vline(0, 42, curses.ACS_TTEE, 1)
 
         # server statistics
         self.screen.vline(1, 42, curses.ACS_VLINE, 12)
@@ -139,13 +128,11 @@ class MainWindow:
             value = round(self.screen_buffer['clients'][clnt]['count'] / height)
             self.screen.vline(1 + height - value, 63+i, curses.ACS_BOARD, value)
 
-        self.screen.border()
         # Show [Quit]
         self.screen.addstr(curses.LINES-1, 1, "Q", curses.color_pair(3) | curses.A_UNDERLINE)
         self.screen.addstr(curses.LINES-1, 2, "uit", curses.color_pair(3))
 
         self.screen.move(curses.LINES-1, 1)
-        self.screen.noutrefresh()
 
 
 def start_clients():
@@ -168,8 +155,10 @@ def handler(signum, frame):
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler)
     signal.signal(signal.SIGALRM, handler)
+    print("PID:", os.getpid())
 
     queue = Queue()
+
     thread = Thread(target=start_server, args=(queue, ), daemon=True)
     thread.start()
     start_clients()
