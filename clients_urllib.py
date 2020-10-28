@@ -1,4 +1,5 @@
 import json
+import logging
 import random
 from threading import Thread
 import time
@@ -12,6 +13,7 @@ class AutomatThread(Thread):
         self.host = host
         self.port = port
         self.active_state = None
+        self.logger = logging.getLogger(f"TestAutomat.Client #{id}")
 
     def update_status(self):
         active_state = 'A'
@@ -70,11 +72,11 @@ class AutomatThread(Thread):
     def send(self, data):
         rsp = json.dumps(data).encode('utf-8')
 
-        with urllib.request.urlopen(f"http://{self.host}:{self.port}", rsp) as f:
-            try:
+        try:
+            with urllib.request.urlopen(f"http://{self.host}:{self.port}", rsp) as f:
                 response = json.load(f)
-            except Exception as e:
-                print(e)
+        except Exception as e:
+            self.logger.error(str(e))
 
         return int(response['message']['y'])
 

@@ -1,4 +1,5 @@
 import curses
+import logging
 from multiprocessing import Queue
 import signal
 import sys
@@ -13,6 +14,13 @@ HOST, PORT = '127.0.0.1', 8001
 
 class MainWindow:
     def __init__(self, queue):
+        self.logger = logging.getLogger("TestAutomat")
+        self.logger.setLevel(logging.ERROR)
+        fh = logging.FileHandler("error.log")
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        fh.setFormatter(formatter)
+        self.logger.addHandler(fh)
+
         self.queue = queue
         self.screen_buffer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
         self.setwondow()
@@ -56,8 +64,10 @@ class MainWindow:
                 # All threads completed, close
                 if self.screen_buffer['F_status_count'] == 32:
                     self.f_window()
-            except curses.error:
-                pass
+                elif self.screen_buffer['F_status_count'] > 32:
+                    break
+            except curses.error as e:
+                self.logger.error(str(e))
 
             curses.update_lines_cols()
             if curses.COLS != cols or curses.LINES != line:

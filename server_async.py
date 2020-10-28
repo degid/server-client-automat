@@ -1,5 +1,6 @@
 import asyncio
 import json
+import logging
 import random
 import sys
 
@@ -14,13 +15,17 @@ class Server:
         self.request_count = 0
         self.screen_buffer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
 
+        self.logger = logging.getLogger("TestAutomat.Server")
+
     def run(self):
         asyncio.run(self.start())
 
     async def start(self):
-        server = await asyncio.start_server(self.server_client, self.server_address, self.server_port)
-        # print('Server is started')
-        await server.serve_forever()
+        try:
+            server = await asyncio.start_server(self.server_client, self.server_address, self.server_port)
+            await server.serve_forever()
+        except Exception as e:
+            self.logger.error(str(e))
 
     async def server_client(self, reader, writer):
         cid = self.screen_buffer['request_count']
@@ -43,7 +48,7 @@ class Server:
             if match[1] == Http.GET:
                 return Http.GET
             elif match[1] != Http.POST:
-                print(match[0], file=sys.stderr)
+                self.logger.error(f"405. Method Not Allowed - {match[0]}")
                 return Http.Status_400  # "E4xx"
 
             # reading headers
@@ -56,6 +61,7 @@ class Server:
                 headers[header[0]] = header[1].strip(' \n\r')
 
             if 'Content-Length' not in headers or headers['Content-Length'] == '0':
+                self.logger.error("Content-Length error")
                 return Http.Status_400
 
             # reading body
