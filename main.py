@@ -11,16 +11,15 @@ from server_async import Server
 
 HOST, PORT = '127.0.0.1', 8001
 
+logger = logging.getLogger("TestAutomat")
+logger.setLevel(logging.ERROR)
+fh = logging.FileHandler("error.log")
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+logger.addHandler(fh)
 
 class MainWindow:
     def __init__(self, queue):
-        self.logger = logging.getLogger("TestAutomat")
-        self.logger.setLevel(logging.ERROR)
-        fh = logging.FileHandler("error.log")
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
-
         self.queue = queue
         self.screen_buffer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
         self.setwondow()
@@ -67,7 +66,7 @@ class MainWindow:
                 elif self.screen_buffer['F_status_count'] > 32:
                     break
             except curses.error as e:
-                self.logger.error(str(e))
+                logger.error(str(e))
 
             curses.update_lines_cols()
             if curses.COLS != cols or curses.LINES != line:
@@ -187,7 +186,11 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler)
 
     queue = Queue()
+    #try:
     thread = Thread(target=start_server, args=(queue, ), daemon=True)
     thread.start()
+    #except BaseException as a:
+    #    logger.error(str(e))
+    
     start_clients()
     win = MainWindow(queue)
