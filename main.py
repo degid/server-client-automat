@@ -3,13 +3,15 @@ import logging
 from multiprocessing import Queue
 import signal
 import sys
-from threading import Thread
+from threading import Thread, Event
 import time
 
 from clients_urllib import AutomatThread
 from server_async import Server
 
 HOST, PORT = '127.0.0.1', 8001
+
+Event_stop_clients = Event()
 
 logger = logging.getLogger("TestAutomat")
 logger.setLevel(logging.ERROR)
@@ -47,6 +49,7 @@ class MainWindow:
         self.clients.bkgd(' ', curses.color_pair(0) | curses.A_BOLD)
 
     def start(self):
+        global Event_stop_clients
         curses.update_lines_cols()
         line, cols = curses.LINES, curses.COLS
         char = 0
@@ -81,6 +84,7 @@ class MainWindow:
             time.sleep(.1)
 
         # Exit
+        Event_stop_clients.set()
         handler()
 
     def f_window(self, ):
@@ -166,8 +170,9 @@ class MainWindow:
 
 
 def start_clients():
-    for th in range(0, 32):
-        thread = AutomatThread(th, HOST, PORT)
+    global Event_stop_clients
+    for name in range(0, 32):
+        thread = AutomatThread(name, HOST, PORT, Event_stop_clients)
         thread.start()
 
 

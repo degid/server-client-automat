@@ -7,13 +7,12 @@ import urllib.request
 
 
 class AutomatThread(Thread):
-    def __init__(self, id: int, host, port):
-        Thread.__init__(self)
-        self.id = id
+    def __init__(self, name, host, port, event_stop):
+        Thread.__init__(self, name=name)
         self.host = host
         self.port = port
-        self.active_state = None
-        self.logger = logging.getLogger(f"TestAutomat.Client #{id}")
+        self.event_stop = event_stop
+        self.logger = logging.getLogger(f"TestAutomat.Client #{self.name}")
 
     def update_status(self):
         active_state = 'A'
@@ -82,18 +81,18 @@ class AutomatThread(Thread):
 
     def run(self):
         automat = self.update_status()
-        self.active_state = automat.send(None)
-        while True:
+        active_state = automat.send(None)
+        while not self.event_stop.is_set():
             random_x = random.randint(1, 255)
 
             data = {
-                'status': self.active_state,
+                'status': active_state,
                 'x': random_x,
-                'id': self.id
+                'id': self.name
             }
             answer_y = self.send(data)
 
             try:
-                self.active_state = automat.send(answer_y)
+                active_state = automat.send(answer_y)
             except StopIteration:
                 break
