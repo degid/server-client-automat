@@ -8,11 +8,10 @@ from utils import Http
 
 
 class Server:
-    def __init__(self, server_address, server_port, queue):
+    def __init__(self, server_address, server_port, queue=None):
         self.server_address = server_address
         self.server_port = server_port
         self.queue = queue
-        self.request_count = 0
         self.screen_buffer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
 
         self.logger = logging.getLogger("TestAutomat.Server")
@@ -109,7 +108,8 @@ class Server:
             self.screen_buffer['min'] = min(self.screen_buffer['min'], count)
             self.screen_buffer['F_status_count'] += 1
 
-        self.queue.put(self.screen_buffer)
+        if self.queue is not None:
+            self.queue.put(self.screen_buffer)
 
         return Http.R200({'x': x, 'y': y})
 
@@ -117,3 +117,9 @@ class Server:
         writer.write(response)
         await writer.drain()
         writer.close()
+
+
+if __name__ == "__main__":
+    HOST, PORT = '127.0.0.1', 8001
+    srv = Server(HOST, PORT)
+    srv.run()
