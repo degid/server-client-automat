@@ -92,7 +92,7 @@ class Server:
             print(e, file=sys.stderr)
             return Http.E400('Bad Request (body)')
 
-        if 'x' not in data and 'status' in data and 'id' in data:
+        if 'x' not in data or 'status' not in data or 'id' not in data:
             return Http.E400('Bad Request (status or x)')
 
         count = 1

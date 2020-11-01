@@ -40,7 +40,7 @@ class Server_Flask:
                 msg = {'error': {'code': 400, 'message': 'Bad json'}}
                 return jsonify(msg)
 
-            if 'x' not in data and 'status' in data and 'id' in data:
+            if 'x' not in data or 'status' not in data or 'id' not in data:
                 msg = {'error': {'code': 400, 'message': 'Bad Request (status or x)'}}
                 return jsonify(msg)
 

@@ -23,7 +23,7 @@ class MainWindow:
         self.queue = Queue()
         self.event_stop_clients = Event()
         self.screen_buffer = {'request_count': 0, 'F_status_count': 0, 'clients': {}, 'max': 0, 'min': 255}
-        self.server_object = {'name': ['Test async', 'Flask'], 'select': 0, 'run': False}
+        self.server_object = {'name': ['Test async', 'Flask', 'CherryPy'], 'select': 0, 'run': False}
         self.set_windows()
         self.loop()
 
@@ -74,6 +74,9 @@ class MainWindow:
         elif self.server_object['select'] == 1:
             from server_flask import Server_Flask
             srv = Server_Flask(HOST, PORT, self.queue)
+        elif self.server_object['select'] == 2:
+            from server_cherrypy import Server_Cherypy
+            srv = Server_Cherypy(HOST, PORT, self.queue)
 
         # run server
         thread = Thread(target=self.start_server, args=(srv, ), daemon=True)
@@ -178,7 +181,8 @@ class MainWindow:
 
         # server statistics
         self.screen.vline(1, 42, curses.ACS_VLINE, 12)
-        self.screen.addstr(1, 48, "SERVER")
+
+        self.screen.addstr(1, 45, self.server_object['name'][self.server_object['select']].center(16))
         self.screen.addstr(2, 45, f"request: {self.screen_buffer['request_count']}")
         if self.screen_buffer['min'] == 255:
             self.screen.addstr(3, 45, "min: -")
