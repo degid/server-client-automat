@@ -18,6 +18,13 @@ class AutomatThread(Thread):
         self.status_D, self.status_E, self.status_F = 'D', 'E', 'F'
 
     def update_status(self):
+        def select(val, num, status_X, status_Y, status_Z):
+            if val >= num:
+                return status_X
+            elif val < 5:
+                return status_Y
+            return status_Z
+
         active_state = self.status_A
 
         while True:
@@ -28,44 +35,19 @@ class AutomatThread(Thread):
                 pass
             else:
                 if active_state == self.status_A:
-                    if value >= 10:
-                        active_state = self.status_B
-                    elif value < 5:
-                        active_state = self.status_C
-                    else:
-                        active_state = self.status_A
+                    active_state = select(value, 10, self.status_B, self.status_C, self.status_A)
 
                 elif active_state == self.status_B:
-                    if value >= 50:
-                        active_state = self.status_C
-                    elif value < 5:
-                        active_state = self.status_D
-                    else:
-                        active_state = self.status_B
+                    active_state = select(value, 50, self.status_C, self.status_D, self.status_B)
 
                 elif active_state == self.status_C:
-                    if value >= 90:
-                        active_state = self.status_D
-                    elif value < 5:
-                        active_state = self.status_E
-                    else:
-                        active_state = self.status_C
+                    active_state = select(value, 90, self.status_D, self.status_E, self.status_C)
 
                 elif active_state == self.status_D:
-                    if value >= 130:
-                        active_state = self.status_D
-                    elif value < 5:
-                        active_state = self.status_F
-                    else:
-                        active_state = self.status_E
+                    active_state = select(value, 130, self.status_D, self.status_F, self.status_E)
 
                 elif active_state == self.status_E:
-                    if value >= 170:
-                        active_state = self.status_F
-                    elif value < 5:
-                        active_state = self.status_A
-                    else:
-                        active_state = self.status_E
+                    active_state = select(value, 170, self.status_F, self.status_A, self.status_E)
 
                 elif active_state == self.status_F:
                     active_state = self.status_F
