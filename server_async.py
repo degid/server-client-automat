@@ -1,10 +1,13 @@
 import asyncio
 import json
 import logging
+import os
 import random
-import sys
 
 from utils import Http
+
+HOST = os.environ.get('HOST')
+PORT = os.environ.get('PORT')
 
 
 class Server:
@@ -89,8 +92,11 @@ class Server:
         try:
             data = json.loads(request['body'])
         except json.JSONDecodeError as e:
-            print(e, file=sys.stderr)
+            self.logger.error(str(e))
             return Http.E400('Bad Request (body)')
+        except Exception as e:
+            self.logger.error(str(e))
+            return Http.E400('Bad Request')
 
         if 'x' not in data or 'status' not in data or 'id' not in data:
             return Http.E400('Bad Request (status or x)')
@@ -108,18 +114,17 @@ class Server:
             self.screen_buffer['min'] = min(self.screen_buffer['min'], count)
             self.screen_buffer['F_status_count'] += 1
 
-        if self.queue is not None:
-            self.queue.put(self.screen_buffer)
-
         return Http.R200({'x': x, 'y': y})
 
     async def write_response(self, writer, response, cid):
+        if self.queue is not None:
+            self.queue.put(self.screen_buffer)
+
         writer.write(response)
         await writer.drain()
         writer.close()
 
 
 if __name__ == "__main__":
-    HOST, PORT = '127.0.0.1', 8001
     srv = Server(HOST, PORT)
     srv.run()

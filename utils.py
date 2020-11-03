@@ -24,7 +24,8 @@ responseXXX = {
 json_errorXXX = {
     'error': {
         'code': 0,
-        'message': ''
+        'message': '',
+        'data': strftime("%a, %d %b %Y %H:%M:%S GMT", gmtime())
     }
 }
 
@@ -51,32 +52,49 @@ class Http:
         data['length'] = len(jsdmp)
         return HTTP.substitute(data) + jsdmp
 
+    @classmethod
     def date_time_string(self):
         return strftime("%a, %d %b %Y %H:%M:%S GMT", gmtime())
 
     @classmethod
+    def headers(self, code, message, data_time):
+        response = responseXXX.copy()
+        response['code'] = code
+        response['message'] = message
+        response['data'] = data_time
+        return response
+
+    @classmethod
+    def json_body(self, message, data_time):
+        body = json_response.copy()
+        body['message'] = message
+        body['meta']['data'] = data_time
+        return body
+
+    @classmethod
+    def json_error(self, code, message, data_time=None):
+        error = json_errorXXX.copy()
+        error['error']['code'] = 400
+        error['error']['message'] = message
+        error['error']['data'] = Http.date_time_string() if data_time is None else data_time
+        return error
+
+    @classmethod
     def E400(self, message=None):
         message = 'Bad Request' if message is None else message
+        data_time = Http.date_time_string()
 
-        response = responseXXX.copy()
-        response['code'] = 400
-        response['message'] = message
+        headers = Http.headers(400, message, data_time)
+        json_error = Http.json_error(400, message, data_time)
 
-        json_error = json_errorXXX.copy()
-        json_error['error']['code'] = 400
-        json_error['error']['message'] = message
-
-        return self.HTTP_Response(tmpl, response, json_error).encode('utf-8')
+        return self.HTTP_Response(tmpl, headers, json_error).encode('utf-8')
 
     @classmethod
     def R200(self, message=None):
         message = 'OK' if message is None else message
+        data_time = Http.date_time_string()
 
-        response = responseXXX.copy()
-        response['code'] = 200
-        response['message'] = 'OK'
+        headers = Http.headers(200, 'OK', data_time)
+        json_body = Http.json_body(message, data_time)
 
-        json_body = json_response.copy()
-        json_body['message'] = message
-
-        return self.HTTP_Response(tmpl, response, json_body).encode('utf-8')
+        return self.HTTP_Response(tmpl, headers, json_body).encode('utf-8')

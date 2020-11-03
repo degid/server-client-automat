@@ -3,6 +3,7 @@ import logging
 from multiprocessing import Queue
 import signal
 import sys
+import threading
 from threading import Thread, Event
 import time
 
@@ -52,6 +53,7 @@ class MainWindow:
         self.clients.bkgd(' ', curses.color_pair(0) | curses.A_BOLD)
 
     def select_server(self):
+        ''' Window show servers list '''
         length = ' ' * 26
         self.servers.border()
         self.servers.addstr(0, 8, ' Select server ', curses.color_pair(6))
@@ -93,8 +95,24 @@ class MainWindow:
         line, cols = curses.LINES, curses.COLS
         char = 0
         exit_symbol = [81, 113, 176, 208, 70, 102, 192, 340]
-        while char not in exit_symbol:
+        is_loop, is_exit = True, False
+        count_time_exit = 0
+        while is_loop:
             char = self.screen.getch()
+
+            if char in exit_symbol:
+                # stop clients
+                self.event_stop_clients.set()
+                is_exit = True
+
+            # wait stop client-threads (only "Test async")
+            if is_exit:
+                if threading.active_count() <= 3:
+                    is_loop = False
+                elif self.server_object['select'] > 0:
+                    count_time_exit += 1
+                if count_time_exit == 50:  # 5 seconds
+                    is_loop = False
 
             if not self.queue.empty():
                 self.screen_buffer = self.queue.get()
@@ -125,6 +143,7 @@ class MainWindow:
 
             curses.update_lines_cols()
             if curses.COLS != cols or curses.LINES != line:
+                # if resize wondow
                 line, cols = curses.LINES, curses.COLS
                 self.create_windiws()
                 self.screen.clear()
@@ -133,18 +152,19 @@ class MainWindow:
             else:
                 curses.doupdate()
 
+            # update screen
             time.sleep(.1)
 
-        # Exit
-        self.event_stop_clients.set()
         handler()
 
     def f_window(self, ):
+        ''' Show this window when all threads sended F-status '''
         self.win.addstr(2, 4, self.f_mesage[::-1], curses.color_pair(4))
         self.win.border()
         self.win.noutrefresh()
 
     def clients_window(self):
+        ''' Window with status' clients '''
         next_pos, next_row = 0, 0
         for i, clnt in enumerate(self.screen_buffer['clients']):
             X = 0 if self.screen_buffer['clients'][clnt]['count'] > 99 else 1
@@ -197,7 +217,8 @@ class MainWindow:
         self.screen.hline(5, 42, curses.ACS_LTEE, 1)
         self.screen.hline(5, 43, curses.ACS_HLINE, 16)
 
-        self.screen.addstr(6, 45, f"Exit: { 32 - self.screen_buffer['F_status_count']} ")
+        self.screen.addstr(6, 45, f"Threads: { threading.active_count() } ")
+        self.screen.addstr(7, 45, f"F-status: { self.screen_buffer['F_status_count']} ")
 
         # diagram
         self.screen.vline(2, 62, curses.ACS_VLINE, 12)
@@ -224,10 +245,12 @@ class MainWindow:
 
 def handler(signum=None, frame=None):
     print('Signal handler called with signal', signum)
-    curses.endwin()
-    sys.exit()
+    sys.exit(0)
 
 
 if __name__ == '__main__':
     signal.signal(signal.SIGINT, handler)
-    MainWindow()
+    try:
+        MainWindow()
+    finally:
+        curses.endwin()

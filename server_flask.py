@@ -2,6 +2,10 @@ from flask import Flask, jsonify
 from flask import request
 import random
 import logging
+import os
+
+HOST = os.environ.get('HOST')
+PORT = os.environ.get('PORT')
 
 
 class Server_Flask:
@@ -67,6 +71,5 @@ class Server_Flask:
 
 
 if __name__ == "__main__":
-    HOST, PORT = '127.0.0.1', 8001
     srv = Server_Flask(HOST, PORT)
     srv.run()

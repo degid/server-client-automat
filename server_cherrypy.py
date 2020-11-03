@@ -1,5 +1,10 @@
 import cherrypy
+import os
 import random
+from utils import Http
+
+HOST = os.environ.get('HOST')
+PORT = os.environ.get('PORT')
 
 
 class _Cherypy(object):
@@ -19,10 +24,14 @@ class _Cherypy(object):
     @cherrypy.tools.json_in()
     def index(self):
         self.screen_buffer['request_count'] += 1
-        data = cherrypy.request.json
+
+        try:
+            data = cherrypy.request.json
+        except AttributeError:
+            return Http.json_error(400, 'Bad Request')
+
         if 'x' not in data or 'status' not in data or 'id' not in data:
-            msg = {'error': {'code': 400, 'message': 'Bad Request (status or x)'}}
-            return msg
+            return Http.json_error(400, 'Bad Request (status or x)')
 
         count = 1
         if data['id'] in self.screen_buffer['clients']:
@@ -55,4 +64,4 @@ class Server_Cherypy:
 
 
 if __name__ == '__main__':
-    cherrypy.quickstart(_Cherypy('127.0.0.1', 8001))
+    cherrypy.quickstart(_Cherypy(HOST, PORT))

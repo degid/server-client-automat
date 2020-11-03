@@ -1,9 +1,13 @@
 import json
 import logging
+import os
 import random
 from threading import Thread, Event
 import time
 import urllib.request
+
+HOST = os.environ.get('HOST')
+PORT = os.environ.get('PORT')
 
 
 class AutomatThread(Thread):
@@ -84,8 +88,8 @@ class AutomatThread(Thread):
             except StopIteration:
                 break
 
+
 if __name__ == '__main__':
-    HOST, PORT = '127.0.0.1', 8001
-    for name in range(0, 32):
+    for name in range(0, 1):
         thread = AutomatThread(name, HOST, PORT, Event())
         thread.start()
